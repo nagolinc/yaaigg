@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Buildings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            padding-top: 60px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+        }
+
+        #caption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #ccc;
+            padding: 10px 0;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .reward-item {
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .reward-name {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .reward-content {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .reward-caption {
+            font-size: 1em;
+        }
+    </style>
+    <script>
+
+        // Function to add a new reward item
+        function addRewardItem(item) {
+            let stars = ''
+            for (let i = 0; i < item.star_rating; i++) {
+                stars += '⭐';
+            }
+
+            var rewardElement = $(`
+                <div class="reward-item">
+                    <div class="reward-name">
+                        <strong>${item.name}</strong> ${stars}
+                    </div>
+                    <hr>
+                    <div class="reward-content" style="display: flex; align-items: center;">
+                        <img src="${item.thumbnail_filename}" alt="Reward" class="thumbnail" style="width:100px; height:auto; margin-right: 10px;" data-full="${item.filename}">
+                        <button class="sellBtn btn btn-secondary" data-value="${item.reward_value}" data-name="${item.name}">Sell for $${item.reward_value}</button>
+                    </div>
+                    <hr>
+                    <div class="reward-caption">
+                        <p>${item.caption}</p>
+                    </div>
+                </div>
+            `);
+
+            // Preload the full-size image
+            var preloadImage = new Image();
+            preloadImage.src = item.filename;
+            preloadImage.style.display = 'none';
+            document.body.appendChild(preloadImage);
+
+            // Prepend the reward element to the container
+            $('#rewardsArea').prepend(rewardElement);
+
+            // Add click event to the thumbnail
+            rewardElement.find('.thumbnail').on('click', function () {
+                var fullImageSrc = $(this).data('full');
+                $('#fullImage').attr('src', ''); // Clear the previous image
+                $('#imageModal').css('display', 'block');
+                $('#caption').text(item.caption);
+                $('#fullImage').attr('src', fullImageSrc); // Set the new image source
+            });
+        }
+
+// Function to get user data
+function getUserData() {
+    $.ajax({
+        url: '/get_user_data',
+        type: 'GET',
+        success: function(data) {
+            // Update currency
+            $('#currency').text(data.currency);
+
+            // Populate rewards area
+            $('#rewardsArea').empty(); // Clear existing rewards
+            data.buildings.forEach(function(item) {
+                addRewardItem(item);
+            });
+        },
+        error: function(response) {
+            displayError('Failed to load user data.');
+        }
+    });
+}
+
+        // Close the modal when the user clicks on <span> (x)
+        $('.close').on('click', function () {
+            $('#imageModal').css('display', 'none');
+        });
+
+        // Close the modal when the user clicks anywhere outside of the modal
+        $(window).on('click', function (event) {
+            if ($(event.target).is('#imageModal')) {
+                $('#imageModal').css('display', 'none');
+            }
+        });
+
+        function displayError(message) {
+            $('#errorArea').text(message);
+            $('#errorArea').show();
+            setTimeout(function () {
+                $('#errorArea').hide();
+            }, 3000);
+        }
+
+        function earnMoney() {
+            $.post('/earn_currency', {}, function (data) {
+                $('#currency').text(data.currency);
+            });
+        }
+
+
+        $(document).ready(function () {
+            $('#openBox').click(function () {
+                $.post('/build_building', {}, function (data) {
+                    var building = data.building;
+                    addRewardItem(building);
+                    $('#currency').text(data.currency);
+                }).fail(function (response) {
+                    //alert(response.responseJSON.error);
+                    displayError(response.responseJSON.error);
+                });
+            });
+
+
+            $('#earnMoney').click(earnMoney);
+
+            $('#rewardsArea').on('click', '.sellBtn', function () {
+                var value = $(this).attr('data-value');
+                var name = $(this).attr('data-name');
+                $.ajax({
+                    url: '/sell_building',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ value: value, name: name }),
+                    success: function (data) {
+                        $('#currency').text(data.currency);
+                    },
+                    error: function (response) {
+                        displayError('Failed to sell reward.');
+                    }
+                });
+                $(this).parent().parent().remove();
+            });
+
+            getUserData()
+
+        });
+    </script>
+
+</head>
+
+<body>
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="fullImage">
+        <div id="caption"></div>
+    </div>
+    <div class="container">
+        <h1>Buildings</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <button n id="openBox" class="btn btn-primary btn-block">Click to Open</button>
+                <div id="errorArea" style="display: none;"></div>
+                <div class="reward-area" id="rewardsArea">Rewards will be displayed here.</div>
+            </div>
+            <div class="col-md-6">
+                <button id="earnMoney" class="btn btn-success btn-block">Click to Earn</button>
+                <div class="info-area">You have <span id="currency">10</span> Coins</div>
+                <div class="error-area" id="errorArea" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+</body>
+
+</html>

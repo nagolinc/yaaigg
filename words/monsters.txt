@@ -1,0 +1,101 @@
+Wolf
+Rat
+Skeleton
+Zombie
+Goblin
+Orc
+Troll
+Dragon
+Ghost
+Vampire
+Werewolf
+Harpy
+Griffin
+Wyvern
+Giant Spider
+Ogre
+Manticore
+Basilisk
+Centaur
+Kobold
+Minotaur
+Banshee
+Specter
+Wraith
+Imp
+Djinn
+Elemental
+Ghoul
+Naga
+Slime
+Ooze
+Mimic
+Lich
+Medusa
+Hydra
+Demon
+Angel
+Behemoth
+Kraken
+Phoenix
+Mermaid
+Chimera
+Siren
+Hellhound
+Golem
+Cerberus
+Cyclops
+Satyr
+Sphinx
+Fairy
+Spriggan
+Balrog
+Yeti
+Ice Giant
+Fire Giant
+Drow
+Dryad
+Pixie
+Ettin
+Kelpie
+Leviathan
+Mantaray
+Succubus
+Shade
+Giant Bat
+Giant Rat
+Giant Toad
+Sea Serpent
+Roc
+Unicorn
+Pegasus
+Bugbear
+Hill Giant
+Storm Giant
+Shadow
+Quasit
+Wight
+Bonelord
+Carrion Crawler
+Flumph
+Gremlin
+Homunculus
+Jackalwere
+Lamia
+Lizardfolk
+Myconid
+Night Hag
+Oni
+Otyugh
+Poltergeist
+Rakshasa
+Rust Monster
+Salamander
+Scarecrow
+Shambling Mound
+Skum
+Tarrasque
+Thri-kreen
+Troglodyte
+Umber Hulk
+Yuan-ti

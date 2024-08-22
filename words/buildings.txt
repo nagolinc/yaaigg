@@ -1,0 +1,50 @@
+Tavern/Inn
+Blacksmith
+Wizard's Tower
+Alchemy Shop
+Temple
+Library
+Castle
+Fortress
+Palace
+Guild Hall
+Marketplace
+Stable
+Armory
+Barracks
+Watchtower
+Dungeon
+Thieves' Guild
+Magic Shop
+Apothecary
+Herbalist's Hut
+Town Hall
+Cathedral
+Monastery
+Bank
+Jeweler
+Tailor
+Butcher Shop
+Bakery
+Brewery
+Farmhouse
+Mill
+Workshop
+Orphanage
+Opera House
+Theater
+Arena
+Dock/Shipyard
+Fishmonger's
+Cobbler's Shop
+Carpenter's Workshop
+Mason's Lodge
+Graveyard
+Crypt
+Observatory
+University
+Art Gallery
+Fletcher
+Glassblower's Studio
+Potter's Studio
+Weaver's Cottage

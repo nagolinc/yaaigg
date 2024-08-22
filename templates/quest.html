@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Fantasy Quest</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        .npc-card {
+            cursor: pointer;
+            transition: transform .2s;
+        }
+
+        .npc-card:hover {
+            transform: scale(1.1);
+        }
+
+        .selected {
+            border: 2px solid green;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <div id="questArea" class="mb-3"></div>
+        <div id="npcArea" class="mb-3"></div>
+        <button id="startQuest">Start Quest</button>
+        <div id="progressContainer" style="display: none;">
+            <div id="progressBar" style="width: 0%; height: 20px; background-color: #4caf50;"></div>
+        </div>
+        <div id="resultArea"></div>
+        <button id="newQuest" style="display: none;">New Quest</button>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            let selectedNPCs = [];
+            let currentQuest = {};
+            let storedUserData = {}
+
+            function fetchUserData() {
+                $.getJSON('/get_user_data', function (data) {
+                    displayNPCs(data.npcs);
+                    storedUserData = data
+                });
+            }
+
+            function fetchQuest() {
+                $.getJSON('/random_quest', function (data) {
+                    displayQuest(data.quest);
+                    currentQuest = data.quest;
+                });
+            }
+
+            function displayQuest(quest) {
+                const questHTML = `
+                    <h4>${quest.name} - ${quest.difficulty}</h4>
+                    <p>${quest.caption}</p>
+                    <img src="${quest.filename}" alt="Quest Image" class="img-fluid">
+                    <p>${quest.description}</p>
+                `;
+                $('#questArea').html(questHTML);
+            }
+
+            function displayNPCs(npcs) {
+                let npcsHTML = '<h4>Select up to 3 NPCs:</h4><div class="d-flex flex-wrap">';
+                npcs.forEach(npc => {
+                    npcsHTML += `
+                        <div class="card m-2 npc-card" data-npc-id="${npc.name}" style="width: 8rem;">
+                            <img class="card-img-top" src="${npc.thumbnail_filename}" alt="NPC Image">
+                            <div class="card-body">
+                                <h5 class="card-title">${npc.name}</h5>
+                            </div>
+                        </div>
+                    `;
+                });
+                npcsHTML += '</div>';
+                $('#npcArea').html(npcsHTML);
+            }
+
+            $('#npcArea').on('click', '.npc-card', function () {
+                const npcId = $(this).data('npc-id');
+                if (selectedNPCs.includes(npcId)) {
+                    selectedNPCs = selectedNPCs.filter(id => id !== npcId);
+                    $(this).removeClass('selected');
+                } else if (selectedNPCs.length < 3) {
+                    selectedNPCs.push(npcId);
+                    $(this).addClass('selected');
+                }
+            });
+            $('#startQuest').click(function () {
+                if (selectedNPCs.length === 0) {
+                    alert('Please select at least one NPC.');
+                    return;
+                }
+                // Collect data for selected NPCs
+                let npcData = [];
+                selectedNPCs.forEach(npc => {
+                    npcData.push(storedUserData.npcs.find(npcObj => npcObj.name === npc));
+                });
+
+                const questData = {
+                    npcs: npcData,
+                    quest: currentQuest
+                };
+                console.log("completing quest", questData);
+
+                $.ajax({
+                    url: '/complete_quest',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(questData),
+                    success: function (response) {
+                        $('#startQuest').hide();
+                        $('#progressContainer').show();
+                        let progress = 0;
+                        const interval = response.timeout * 10; // Update every 1% of the total timeout
+                        const progressBarInterval = setInterval(function () {
+                            progress += 1;
+                            $('#progressBar').css('width', progress + '%');
+                            if (progress >= 100) {
+                                clearInterval(progressBarInterval);
+                                $('#progressContainer').hide();
+                                $('#resultArea').text('Quest result: ' + response.message);
+                                $('#newQuest').show();
+                            }
+                        }, interval);
+                    }
+                });
+            });
+
+            $('#newQuest').click(function () {
+                $('#resultArea').empty();
+                fetchQuest(); // Fetch a new quest after displaying the result
+                selectedNPCs = [];
+                $('.npc-card').removeClass('selected');
+                $('#newQuest').hide();
+                $('#startQuest').show();
+            });
+
+            fetchUserData();
+            fetchQuest();
+        });
+    </script>
+
+    {% include 'footer.html' %}
+
+</body>
+
+</html>

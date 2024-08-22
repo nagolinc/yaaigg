@@ -1,0 +1,50 @@
+Fighter
+Rogue
+Healer
+Wizard
+Cleric
+Paladin
+Ranger
+Sorcerer
+Bard
+Druid
+Warlock
+Monk
+Barbarian
+Necromancer
+Alchemist
+Assassin
+Illusionist
+Summoner
+Knight
+Thief
+Shaman
+Berserker
+Enchanter
+Diviner
+Artificer
+Magician
+Psychic
+Templar
+Witch
+Hunter
+Archmage
+Shadow Knight
+Beastmaster
+Seer
+Scribe
+Gladiator
+Pirate
+Samurai
+Ninja
+Gunslinger
+Mystic
+Elementalist
+Oracle
+Time Mage
+Battle Mage
+Priest
+Necrodancer
+Rune Master
+Spellblade
+Warlord

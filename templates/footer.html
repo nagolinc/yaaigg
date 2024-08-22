@@ -1,0 +1,47 @@
+<style>
+    .custom-btn {
+        display: inline-block;
+        margin: 5px;
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 25px; /* Rounded corners */
+        background-color: #007bff; /* Primary color */
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .custom-btn:hover {
+        background-color: #0056b3; /* Darker shade on hover */
+        transform: scale(1.05); /* Slightly enlarge on hover */
+        color: white;
+    }
+
+    .current-page {
+        background-color: #0056b3 !important; /* Darker blue for current page */
+    }
+</style>
+
+<a href="/" class="btn custom-btn" id="home-btn">Home</a>
+<a href="/items" class="btn custom-btn" id="items-btn">Items</a>
+<a href="/npc" class="btn custom-btn" id="npc-btn">NPCs</a>
+<a href="/building" class="btn custom-btn" id="building-btn">Buildings</a>
+<a href="/quest" class="btn custom-btn" id="quest-btn">Quests</a>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var currentPage = window.location.pathname;
+        if (currentPage === '/') {
+            document.getElementById('home-btn').classList.add('current-page');
+        } else if (currentPage === '/npc') {
+            document.getElementById('npc-btn').classList.add('current-page');
+        } else if (currentPage === '/building') {
+            document.getElementById('building-btn').classList.add('current-page');
+        } else if (currentPage === '/quest') {
+            document.getElementById('quest-btn').classList.add('current-page');
+        }else if (currentPage === '/items') {
+            document.getElementById('items-btn').classList.add('current-page');
+        }
+    });
+</script>

@@ -1,0 +1,17 @@
+Weapon
+Armor
+Potion
+Accessory
+Scroll
+Book
+Food
+Drink
+Herb
+Gemstone
+Ore
+Crafting Material
+Tool
+Key
+Treasure
+Amulet
+Ring
