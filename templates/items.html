@@ -9,6 +9,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <style>
+        .btn-success {
+            background-color: green;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: red;
+            color: white;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -81,6 +91,21 @@
     </style>
     <script>
 
+function checkQueueStatus() {
+        $.ajax({
+            url: '/ready',
+            type: 'GET',
+            data: { type: 'item' },
+            success: function (response) {
+                if (response.nonempty) {
+                    $('#openBox').removeClass('btn-danger').addClass('btn-success').prop('disabled', false);
+                } else {
+                    $('#openBox').removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
+                }
+            }
+        });
+    }
+
         // Function to add a new reward item
         function addRewardItem(item) {
             let stars = ''
@@ -124,26 +149,26 @@
             });
         }
 
-// Function to get user data
-function getUserData() {
-    $.ajax({
-        url: '/get_user_data',
-        type: 'GET',
-        success: function(data) {
-            // Update currency
-            $('#currency').text(data.currency);
+        // Function to get user data
+        function getUserData() {
+            $.ajax({
+                url: '/get_user_data',
+                type: 'GET',
+                success: function (data) {
+                    // Update currency
+                    $('#currency').text(data.currency);
 
-            // Populate rewards area
-            $('#rewardsArea').empty(); // Clear existing rewards
-            data.items.forEach(function(item) {
-                addRewardItem(item);
+                    // Populate rewards area
+                    $('#rewardsArea').empty(); // Clear existing rewards
+                    data.items.forEach(function (item) {
+                        addRewardItem(item);
+                    });
+                },
+                error: function (response) {
+                    displayError('Failed to load user data.');
+                }
             });
-        },
-        error: function(response) {
-            displayError('Failed to load user data.');
         }
-    });
-}
 
         // Close the modal when the user clicks on <span> (x)
         $('.close').on('click', function () {
@@ -207,6 +232,9 @@ function getUserData() {
 
             getUserData()
 
+            setInterval(checkQueueStatus, 1000); // Check every 5 seconds
+
+
         });
     </script>
 
@@ -222,7 +250,7 @@ function getUserData() {
         <h1>Treasure Box Game</h1>
         <div class="row">
             <div class="col-md-6">
-                <button n id="openBox" class="btn btn-primary btn-block">Click to Open</button>
+                <button n id="openBox" class="btn btn-primary btn-block btn-danger">Click to Open</button>
                 <div id="errorArea" style="display: none;"></div>
                 <div class="reward-area" id="rewardsArea">Rewards will be displayed here.</div>
             </div>

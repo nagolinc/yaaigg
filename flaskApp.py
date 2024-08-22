@@ -192,6 +192,22 @@ def get_user_data():
     return jsonify(user_data)
 
 
+@app.route('/ready')
+def ready():
+    queue_type = request.args.get('type')
+    if queue_type == 'item':
+        is_nonempty = not item_queue.empty()
+    elif queue_type == 'npc':
+        is_nonempty = not npc_queue.empty()
+    elif queue_type == 'building':
+        is_nonempty = not building_queue.empty()
+    elif queue_type == 'quest':
+        is_nonempty = not quest_queue.empty()
+    else:
+        return jsonify({"error": "Invalid type"}), 400
+
+    return jsonify({"nonempty": is_nonempty})
+
 
 if __name__ == '__main__':
     loadUserData()
