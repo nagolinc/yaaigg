@@ -4,11 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <title>NPCs</title>
+
+    {% include 'header.html' %}
+
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <style>
+
+        .btn-success {
+            background-color: green;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: red;
+            color: white;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -81,6 +96,21 @@
     </style>
     <script>
 
+        function checkQueueStatus() {
+            $.ajax({
+                url: '/ready',
+                type: 'GET',
+                data: { type: 'npc' },
+                success: function (response) {
+                    if (response.nonempty) {
+                        $('#openBox').removeClass('btn-danger').addClass('btn-success').prop('disabled', false);
+                    } else {
+                        $('#openBox').removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
+                    }
+                }
+            });
+        }
+
         // Function to add a new reward item
         function addRewardItem(item) {
             let stars = ''
@@ -96,11 +126,18 @@
                     <hr>
                     <div class="reward-content" style="display: flex; align-items: center;">
                         <img src="${item.thumbnail_filename}" alt="Reward" class="thumbnail" style="width:100px; height:auto; margin-right: 10px;" data-full="${item.filename}">
-                        <button class="sellBtn btn btn-secondary" data-value="${item.reward_value}" data-name="${item.name}">Sell for $${item.reward_value}</button>
+                        <button class="sellBtn btn btn-secondary" data-value="${item.reward_value}" data-id="${item.id}" style="margin-right: 10px;">Sell for $${item.reward_value}</button>
+                        <a href="/character_management?npc=${item.id}" class="btn btn-primary manage-btn">Manage</a>
                     </div>
                     <hr>
                     <div class="reward-caption">
                         <p>${item.caption}</p>
+                        <div>
+                            <p><b>Race:</b> ${item.race}</p>
+                            <p><b>Element:</b> ${item.element}</p>
+                            <p><b>Class:</b> ${item.class}</p>
+                            <p><b>Level:</b> ${item.level}</p>
+                        </div>
                     </div>
                 </div>
             `);
@@ -178,6 +215,10 @@ function getUserData() {
                     var npc = data.npc;
                     addRewardItem(npc);
                     $('#currency').text(data.currency);
+                    //set button to class btn-danger and disable it
+
+
+                    checkQueueStatus();
                 }).fail(function (response) {
                     //alert(response.responseJSON.error);
                     displayError(response.responseJSON.error);
@@ -189,12 +230,12 @@ function getUserData() {
 
             $('#rewardsArea').on('click', '.sellBtn', function () {
                 var value = $(this).attr('data-value');
-                var name = $(this).attr('data-name');
+                var id = $(this).attr('data-id');
                 $.ajax({
                     url: '/sell_npc ',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ value: value, name: name }),
+                    data: JSON.stringify({ value: value, id: id }),
                     success: function (data) {
                         $('#currency').text(data.currency);
                     },
@@ -206,6 +247,9 @@ function getUserData() {
             });
 
             getUserData()
+
+            checkQueueStatus();
+            setInterval(checkQueueStatus, 1000); // Check every 5 seconds
 
         });
     </script>
@@ -222,7 +266,7 @@ function getUserData() {
         <h1>Hire NPCs</h1>
         <div class="row">
             <div class="col-md-6">
-                <button n id="openBox" class="btn btn-primary btn-block">Click to Open</button>
+                <button n id="openBox" class="btn btn-primary btn-block btn-danger">Hire NPC</button>
                 <div id="errorArea" style="display: none;"></div>
                 <div class="reward-area" id="rewardsArea">Rewards will be displayed here.</div>
             </div>

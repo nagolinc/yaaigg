@@ -91,26 +91,36 @@
     </style>
     <script>
 
-function checkQueueStatus() {
-        $.ajax({
-            url: '/ready',
-            type: 'GET',
-            data: { type: 'item' },
-            success: function (response) {
-                if (response.nonempty) {
-                    $('#openBox').removeClass('btn-danger').addClass('btn-success').prop('disabled', false);
-                } else {
-                    $('#openBox').removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
+        function checkQueueStatus() {
+            $.ajax({
+                url: '/ready',
+                type: 'GET',
+                data: { type: 'item' },
+                success: function (response) {
+                    if (response.nonempty) {
+                        $('#openBox').removeClass('btn-danger').addClass('btn-success').prop('disabled', false);
+                    } else {
+                        $('#openBox').removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
 
         // Function to add a new reward item
         function addRewardItem(item) {
             let stars = ''
             for (let i = 0; i < item.star_rating; i++) {
                 stars += '⭐';
+            }
+
+            //if undefined 'None'
+            if(item.equipped === undefined){
+                var equipped = 'None';
+            } else {
+                var equipped = item.equipped;
+                var equipped_name = item.equipped_name;
+                //actually make this a link to the character management page
+                equipped = `<a href="/character_management?npc=${equipped}">${equipped_name}</a>`;
             }
 
             var rewardElement = $(`
@@ -121,11 +131,15 @@ function checkQueueStatus() {
                     <hr>
                     <div class="reward-content" style="display: flex; align-items: center;">
                         <img src="${item.thumbnail_filename}" alt="Reward" class="thumbnail" style="width:100px; height:auto; margin-right: 10px;" data-full="${item.filename}">
-                        <button class="sellBtn btn btn-secondary" data-value="${item.reward_value}" data-name="${item.name}">Sell for $${item.reward_value}</button>
+                        <button class="sellBtn btn btn-secondary" data-value="${item.reward_value}" data-id="${item.id}">Sell for $${item.reward_value}</button>
                     </div>
                     <hr>
                     <div class="reward-caption">
                         <p>${item.caption}</p>
+                        <p>Class: ${item.class}</p>
+                        <P>Element: ${item.element}</P>
+                        <p>Animal: ${item.animal}</p>
+                        <p>Equipped: ${equipped}</p>
                     </div>
                 </div>
             `);
@@ -214,12 +228,12 @@ function checkQueueStatus() {
 
             $('#rewardsArea').on('click', '.sellBtn', function () {
                 var value = $(this).attr('data-value');
-                var name = $(this).attr('data-name');
+                var id = $(this).attr('data-id');
                 $.ajax({
                     url: '/sell_reward',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ value: value, name: name }),
+                    data: JSON.stringify({ value: value, id: id }),
                     success: function (data) {
                         $('#currency').text(data.currency);
                     },
@@ -232,6 +246,7 @@ function checkQueueStatus() {
 
             getUserData()
 
+            checkQueueStatus();
             setInterval(checkQueueStatus, 1000); // Check every 5 seconds
 
 
@@ -242,7 +257,7 @@ function checkQueueStatus() {
 
 <body>
     <div id="imageModal" class="modal">
-        <span class="close">&times;</span>
+        <span class="close">&times;</span>co
         <img class="modal-content" id="fullImage">
         <div id="caption"></div>
     </div>
@@ -250,7 +265,7 @@ function checkQueueStatus() {
         <h1>Treasure Box Game</h1>
         <div class="row">
             <div class="col-md-6">
-                <button n id="openBox" class="btn btn-primary btn-block btn-danger">Click to Open</button>
+                <button n id="openBox" class="btn btn-primary btn-block btn-danger">Open Chest</button>
                 <div id="errorArea" style="display: none;"></div>
                 <div class="reward-area" id="rewardsArea">Rewards will be displayed here.</div>
             </div>

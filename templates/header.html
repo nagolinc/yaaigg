@@ -1,0 +1,175 @@
+<style>
+    .header-progress-container {
+        width: 25%; /* Set the width to 25% */
+        background-color: #f3f3f3;
+        border-radius: 25px;
+        overflow: hidden;
+        margin: 20px 0;
+    }
+    .header-progress-bar {
+        height: 30px;
+        width: 0;
+        background-color: #4caf50;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        border-radius: 25px;
+    }
+    .level-info {
+        margin: 10px 0;
+    }
+</style>
+
+<style>
+
+        /* The Modal (background) */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            padding-top: 100px; /* Location of the box */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+        }
+        
+        /* Modal Content (image) */
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+        }
+        
+        /* Caption of Modal Image */
+        #caption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #ccc;
+            padding: 10px 0;
+        }
+        
+        /* Add Animation - Zoom in the Modal */
+        .modal-content, #caption {
+
+        }
+        
+        @keyframes zoom {
+            from {transform: scale(0)}
+            to {transform: scale(1)}
+        }
+        
+        /* The Close Button */
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+       
+
+
+</style>    
+
+<!-- Modal Structure -->
+<div id="imageModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage">
+    <div id="caption"></div>
+</div>
+
+<div class="header-progress-container">
+    <div class="header-progress-bar" id="header-progressBar">0%</div>
+</div>
+
+<div class="level-info">
+    <p>Level: <span id="level">1</span>
+    Experience: <span id="experience">0</span> / <span id="experienceNextLevel">100</span></p>
+</div>
+
+<script>
+
+    function showModal(imageSrc, captionText) {
+        const modal = document.getElementById("imageModal");
+        const modalImg = document.getElementById("modalImage");
+        const caption = document.getElementById("caption");
+    
+        modal.style.display = "block";
+        modalImg.src = imageSrc;
+        caption.textContent = captionText;
+    }
+
+    // Close the modal when the user clicks on <span> (x)
+    document.querySelector(".modal .close").addEventListener("click", function() {
+        document.getElementById("imageModal").style.display = "none";
+    });
+
+    
+    // Close the modal when the user clicks anywhere outside of the modal
+    window.addEventListener("click", function(event) {
+        const modal = document.getElementById("imageModal");
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+
+
+
+    let player_level=1
+
+    function levelModifier(){
+        return player_level*(player_level+1)/2
+    }
+
+    window.addEventListener('load', () => {
+        fetchLevelData();
+    });
+
+    async function fetchLevelData() {
+        try {
+            const response = await fetch('/get_level_data');
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            updateProgressBar(data);
+        } catch (error) {
+            console.error('There was a problem with the fetch operation:', error);
+        }
+    }
+
+    function updateProgressBar(data) {
+        const level = data.level;
+        player_level=level
+        const experience = data.experience;
+        const experienceNextLevel = data.experienceNextLevel;
+        const progressBar = document.getElementById('header-progressBar');
+        const levelElement = document.getElementById('level');
+        const experienceElement = document.getElementById('experience');
+        const experienceNextLevelElement = document.getElementById('experienceNextLevel');
+
+        const progressPercentage = (experience / experienceNextLevel) * 100;
+
+        levelElement.textContent = level;
+        experienceElement.textContent = experience;
+        experienceNextLevelElement.textContent = experienceNextLevel;
+        progressBar.style.width = progressPercentage + '%';
+        progressBar.textContent = Math.round(progressPercentage) + '%';
+    }
+</script>

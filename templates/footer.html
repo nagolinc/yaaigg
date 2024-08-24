@@ -24,24 +24,21 @@
 </style>
 
 <a href="/" class="btn custom-btn" id="home-btn">Home</a>
-<a href="/items" class="btn custom-btn" id="items-btn">Items</a>
 <a href="/npc" class="btn custom-btn" id="npc-btn">NPCs</a>
+<a href="/items" class="btn custom-btn" id="items-btn">Items</a> 
 <a href="/building" class="btn custom-btn" id="building-btn">Buildings</a>
+<a href="/character_management" class="btn custom-btn" id="character-management-btn">Character Management</a>
 <a href="/quest" class="btn custom-btn" id="quest-btn">Quests</a>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var currentPage = window.location.pathname;
-        if (currentPage === '/') {
-            document.getElementById('home-btn').classList.add('current-page');
-        } else if (currentPage === '/npc') {
-            document.getElementById('npc-btn').classList.add('current-page');
-        } else if (currentPage === '/building') {
-            document.getElementById('building-btn').classList.add('current-page');
-        } else if (currentPage === '/quest') {
-            document.getElementById('quest-btn').classList.add('current-page');
-        }else if (currentPage === '/items') {
-            document.getElementById('items-btn').classList.add('current-page');
-        }
+        const currentPage = window.location.pathname;
+        const buttons = document.querySelectorAll('a.custom-btn');
+
+        buttons.forEach(button => {
+            if (button.getAttribute('href') === currentPage) {
+                button.classList.add('current-page');
+            }
+        });
     });
 </script>

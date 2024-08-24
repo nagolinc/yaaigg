@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    {% include 'header.html' %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPC Management</title>
+    <style>
+        /* Add styles for layout and elements here */
+        #npc-thumbnails {
+            margin-bottom: 10px;
+        }
+        .thumbnail {
+            cursor: pointer;
+            margin: 5px;
+        }
+        #npc-details {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        
+        #npc-image {
+            display: block; /* Remove any inline-block spacing issues */
+        }
+
+        #npc-info {
+            margin-left: 10px;
+        }
+        #building-dropdown {
+            margin-top: 10px;
+        }
+        #item-columns {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .item-column {
+            width: 45%;
+        }
+        
+        #unequipped-items, #equipped-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            height: 150px; /* Set a fixed height */
+            box-sizing: border-box; /* Include padding and border in the height */
+            overflow: hidden; /* Prevent overflow */
+        }
+        
+        .item-name {
+            margin-bottom: 5px;
+            text-align: center;
+            flex-shrink: 0; /* Prevent the name from shrinking */
+        }
+        
+        .item-image {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 5px;
+            flex-shrink: 0; /* Prevent the image from shrinking */
+        }
+        
+        button {
+            padding: 5px 10px;
+            flex-shrink: 0; /* Prevent the button from shrinking */
+            max-width: 100%; /* Ensure the button does not exceed the width of the item div */
+            box-sizing: border-box; /* Include padding in the button's width */
+        }
+
+        #npc-info {
+            max-width: 25%;
+            word-wrap: break-word; /* Ensure long words break to fit within the max width */
+            padding: 10px; /* Optional: Add some padding for better readability */
+            border: 1px solid #ccc; /* Optional: Add a border for visual separation */
+            box-sizing: border-box; /* Ensure padding and border are included in the width calculation */
+        }
+
+
+    </style>
+</head>
+<body>
+
+    
+
+    <div id="npc-thumbnails">
+        <!-- NPC thumbnails will be inserted here dynamically -->
+    </div>
+
+    <div id="npc-details">
+        <img id="npc-image" src="" alt="NPC Image">
+        <div id="npc-info">
+            <h3 id="npc-name"></h3>
+            <div id="npc-info-detailed"></div>
+            <div id="building-info">
+                <img id="building-image" src="" alt="Building Image">
+                <h4 id="building-name"></h4>
+            </div>
+            <div id="building-dropdown">
+                <label for="buildings">Move to Building:</label>
+                <select id="buildings">
+                    <option value="None">None</option>
+                    <!-- Building options will be inserted here dynamically -->
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="item-columns">
+        <div class="item-column" id="equipped-items">
+            <h4>Equipped Items</h4>
+            <!-- Equipped items will be inserted here dynamically -->
+        </div>
+        <div class="item-column" id="unequipped-items">
+            <h4>Unequipped Items</h4>
+            <!-- Unequipped items will be inserted here dynamically -->
+        </div>
+    </div>
+
+    <script src="/static/character_management.js">
+        // Your JavaScript logic to dynamically populate the data and handle events
+    </script>
+
+
+    {% include 'footer.html' %}
+   
+</body>
+</html>

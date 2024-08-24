@@ -1,0 +1,11 @@
+animals: words/animals.txt
+buildings: words/buildings.txt
+classes: words/classes.txt
+elements: words/elements.txt
+genders: words/genders.txt
+items: words/items.txt
+monsters: words/monsters.txt
+questlines: words/questlines.txt
+settings: words/settings.txt
+races: words/races.txt
+prompt_suffix: ''

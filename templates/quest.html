@@ -2,10 +2,15 @@
 <html lang="en">
 
 <head>
+
+    {% include 'header.html' %}
+
     <meta charset="UTF-8">
     <title>Fantasy Quest</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.js"></script>
+    <script src="/static/confetti_examples.js"></script>
     <style>
         .npc-card {
             cursor: pointer;
@@ -19,19 +24,30 @@
         .selected {
             border: 2px solid green;
         }
+
+
+        .border-danger {
+            border: 2px solid red;
+        }
+
+        .disabled-npc {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
     </style>
 </head>
 
 <body>
     <div class="container mt-5">
         <div id="questArea" class="mb-3"></div>
-        <div id="npcArea" class="mb-3"></div>
         <button id="startQuest">Start Quest</button>
         <div id="progressContainer" style="display: none;">
             <div id="progressBar" style="width: 0%; height: 20px; background-color: #4caf50;"></div>
         </div>
         <div id="resultArea"></div>
         <button id="newQuest" style="display: none;">New Quest</button>
+        <div id="npcArea" class="mb-3"></div>
     </div>
 
     <script>
@@ -42,42 +58,117 @@
 
             function fetchUserData() {
                 $.getJSON('/get_user_data', function (data) {
-                    displayNPCs(data.npcs);
+                    displayNPCs(data.npcs,currentQuest);
                     storedUserData = data
                 });
             }
 
             function fetchQuest() {
                 $.getJSON('/random_quest', function (data) {
-                    displayQuest(data.quest);
-                    currentQuest = data.quest;
+                    if (data.error) {
+                        displayMessage("No quests, try again later.");
+                    } else {
+                        displayQuest(data.quest);
+                        currentQuest = data.quest;
+                        fetchUserData();
+                    }
                 });
+            }
+            
+            function displayMessage(message) {
+                // Assuming you have an element with id 'message' to display the message
+                const messageElement = document.getElementById('message');
+                messageElement.innerText = message;
+                messageElement.style.display = 'block'; // Ensure the message element is visible
             }
 
             function displayQuest(quest) {
-                const questHTML = `
-                    <h4>${quest.name} - ${quest.difficulty}</h4>
+                let stars = '';
+                for (let i = 0; i < quest.star_rating; i++) {
+                    stars += '⭐';
+                }
+                let questHTML = `
+                    <h4>${quest.name} - ${stars}</h4>
                     <p>${quest.caption}</p>
                     <img src="${quest.filename}" alt="Quest Image" class="img-fluid">
                     <p>${quest.description}</p>
+                    <p>Level: ${quest.level}</p>
                 `;
+
+                //if quest.required_race is set, add it to the questHTML
+                if (quest.required_race) {
+                    questHTML += `<p><b>Required Race:</b> ${quest.required_race}</p>`;
+                }
+                //if quest.required_class is set, add it to the questHTML
+                if (quest.required_class) {
+                    questHTML += `<p><b>Required Class:</b> ${quest.required_class}</p>`;
+                }
+                //required element
+                if (quest.required_element) {
+                    questHTML += `<p><b>Required Element:</b> ${quest.required_element}</p>`;
+                }
+
                 $('#questArea').html(questHTML);
             }
 
-            function displayNPCs(npcs) {
+
+            async function fetchPowerLevel(npcId) {
+                try {
+                    const response = await fetch('/power_level', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ npc: npcId })
+                    });
+            
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+            
+                    const data = await response.json();
+                    return data.power_level;
+                } catch (error) {
+                    console.error('There was a problem with the fetch operation:', error);
+                }
+            }
+
+            async function displayNPCs(npcs, quest) {
                 let npcsHTML = '<h4>Select up to 3 NPCs:</h4><div class="d-flex flex-wrap">';
-                npcs.forEach(npc => {
+            
+                // Create an array of promises for fetching power levels
+                //const powerLevelPromises = npcs.map(npc => fetchPowerLevel(npc.name));
+            
+                // Wait for all power levels to be fetched
+                //const powerLevels = await Promise.all(powerLevelPromises);
+            
+                // Iterate over NPCs and their corresponding power levels
+                for (let index = npcs.length - 1; index >= 0; index--) {
+                    const npc = npcs[index];
+                    let isDisabled = (quest.required_race && quest.required_race != npc.race);
+                    isDisabled ||= (quest.required_class && quest.required_class != npc.class);
+                    isDisabled ||= (quest.required_element && quest.required_element != npc.element);
+            
+                    let borderColor = isDisabled ? 'border-danger' : '';
+                    let disabledClass = isDisabled ? 'disabled-npc' : '';
+            
+                    // Get the power level from the array of fetched power levels
+                    //let powerLevel = powerLevels[index];
+            
                     npcsHTML += `
-                        <div class="card m-2 npc-card" data-npc-id="${npc.name}" style="width: 8rem;">
+                        <div class="card m-2 npc-card ${borderColor} ${disabledClass}" data-npc-id="${npc.id}" style="width: 8rem;">
                             <img class="card-img-top" src="${npc.thumbnail_filename}" alt="NPC Image">
                             <div class="card-body">
                                 <h5 class="card-title">${npc.name}</h5>
+                                <p>Power: ${npc.power_level}</p>
+                                <a href="/character_management?npc=${npc.id}" class="btn btn-primary">Manage</a>
                             </div>
                         </div>
                     `;
-                });
+                };
+            
                 npcsHTML += '</div>';
-                $('#npcArea').html(npcsHTML);
+                document.getElementById('npcArea').innerHTML = npcsHTML;
             }
 
             $('#npcArea').on('click', '.npc-card', function () {
@@ -85,11 +176,50 @@
                 if (selectedNPCs.includes(npcId)) {
                     selectedNPCs = selectedNPCs.filter(id => id !== npcId);
                     $(this).removeClass('selected');
+                    predictQuestOutcome();
                 } else if (selectedNPCs.length < 3) {
                     selectedNPCs.push(npcId);
                     $(this).addClass('selected');
+                    predictQuestOutcome()
                 }
             });
+
+            function percent(p){
+                return Math.round(p * 100) + '%';
+            }
+
+
+            let quest_wait=5
+
+            function predictQuestOutcome(){
+                let npcData = [];
+                selectedNPCs.forEach(npc => {
+                    npcData.push(storedUserData.npcs.find(npcObj => npcObj.id === npc));
+                });
+
+                const questData = {
+                    npcs: npcData,
+                    quest: currentQuest
+                };
+
+                $.ajax({
+                    url: '/predict_quest_outcome',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(questData),
+                    success: function (response) {
+                        const pSuccess = response.p_success;
+                        $('#resultArea').text('p_success=' + percent(pSuccess));
+
+                        quest_wait=response.timeout
+                        
+                    },
+                    error: function (error) {
+                        console.error('Error predicting quest outcome:', error);
+                    }
+                });
+            }
+
             $('#startQuest').click(function () {
                 if (selectedNPCs.length === 0) {
                     alert('Please select at least one NPC.');
@@ -98,37 +228,59 @@
                 // Collect data for selected NPCs
                 let npcData = [];
                 selectedNPCs.forEach(npc => {
-                    npcData.push(storedUserData.npcs.find(npcObj => npcObj.name === npc));
+                    npcData.push(storedUserData.npcs.find(npcObj => npcObj.id === npc));
                 });
-
+            
                 const questData = {
                     npcs: npcData,
                     quest: currentQuest
                 };
-                console.log("completing quest", questData);
+                console.log("starting quest timer", questData);
+            
+                // Start the timer with the value stored in quest_wait
+                $('#startQuest').hide();
+                $('#progressContainer').show();
+                let progress = 0;
+                const interval = quest_wait * 10; // Update every 1% of the total quest_wait
+                const progressBarInterval = setInterval(function () {
+                    progress += 1;
+                    $('#progressBar').css('width', progress + '%');
+                    if (progress >= 100) {
+                        clearInterval(progressBarInterval);
+                        $('#progressContainer').hide();
+                        // Call /complete_quest when the progress bar finishes
+                        $.ajax({
+                            url: '/complete_quest',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(questData),
+                            success: function (response) {
 
-                $.ajax({
-                    url: '/complete_quest',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(questData),
-                    success: function (response) {
-                        $('#startQuest').hide();
-                        $('#progressContainer').show();
-                        let progress = 0;
-                        const interval = response.timeout * 10; // Update every 1% of the total timeout
-                        const progressBarInterval = setInterval(function () {
-                            progress += 1;
-                            $('#progressBar').css('width', progress + '%');
-                            if (progress >= 100) {
-                                clearInterval(progressBarInterval);
-                                $('#progressContainer').hide();
-                                $('#resultArea').text('Quest result: ' + response.message);
+                                //confetti
+                                if(response.status=='success'){
+                                    confetti({
+                                        particleCount: 100,
+                                        spread: 70,
+                                        origin: { y: 0.6 }
+                                      });
+
+                                    if(response.level_up){
+                                        alert("Level up!")
+                                        confetti2()
+                                    }
+                                }
+
+
+                                $('#resultArea').html('Quest result: ' + response.message);
                                 $('#newQuest').show();
+                                fetchLevelData();
+                            },
+                            error: function (error) {
+                                console.error('Error completing quest:', error);
                             }
-                        }, interval);
+                        });
                     }
-                });
+                }, interval);
             });
 
             $('#newQuest').click(function () {
@@ -138,9 +290,13 @@
                 $('.npc-card').removeClass('selected');
                 $('#newQuest').hide();
                 $('#startQuest').show();
+                //scroll to top
+                setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 500); // Delay of 500 milliseconds (0.5 seconds)
             });
 
-            fetchUserData();
+            
             fetchQuest();
         });
     </script>

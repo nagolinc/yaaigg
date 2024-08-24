@@ -9,6 +9,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <style>
+
+
+        .btn-success {
+            background-color: green;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: red;
+            color: white;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -81,6 +93,22 @@
     </style>
     <script>
 
+
+        function checkQueueStatus() {
+            $.ajax({
+                url: '/ready',
+                type: 'GET',
+                data: { type: 'building' },
+                success: function (response) {
+                    if (response.nonempty) {
+                        $('#openBox').removeClass('btn-danger').addClass('btn-success').prop('disabled', false);
+                    } else {
+                        $('#openBox').removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
+                    }
+                }
+            });
+        }
+
         // Function to add a new reward item
         function addRewardItem(item) {
             let stars = ''
@@ -96,11 +124,13 @@
                     <hr>
                     <div class="reward-content" style="display: flex; align-items: center;">
                         <img src="${item.thumbnail_filename}" alt="Reward" class="thumbnail" style="width:100px; height:auto; margin-right: 10px;" data-full="${item.filename}">
-                        <button class="sellBtn btn btn-secondary" data-value="${item.reward_value}" data-name="${item.name}">Sell for $${item.reward_value}</button>
+                        <button class="sellBtn btn btn-secondary" data-value="${item.reward_value}" data-id="${item.id}">Sell for $${item.reward_value}</button>
                     </div>
                     <hr>
                     <div class="reward-caption">
                         <p>${item.caption}</p>
+                        <p><b>Race:</b> ${item.race}</p>
+                        <p><b>Element:</b> ${item.element}</p>
                     </div>
                 </div>
             `);
@@ -178,6 +208,7 @@ function getUserData() {
                     var building = data.building;
                     addRewardItem(building);
                     $('#currency').text(data.currency);
+                    checkQueueStatus()
                 }).fail(function (response) {
                     //alert(response.responseJSON.error);
                     displayError(response.responseJSON.error);
@@ -189,12 +220,12 @@ function getUserData() {
 
             $('#rewardsArea').on('click', '.sellBtn', function () {
                 var value = $(this).attr('data-value');
-                var name = $(this).attr('data-name');
+                var id = $(this).attr('data-id');
                 $.ajax({
                     url: '/sell_building',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ value: value, name: name }),
+                    data: JSON.stringify({ value: value, id: id }),
                     success: function (data) {
                         $('#currency').text(data.currency);
                     },
@@ -206,6 +237,9 @@ function getUserData() {
             });
 
             getUserData()
+
+            checkQueueStatus()
+            setInterval(checkQueueStatus, 1000);
 
         });
     </script>
@@ -222,7 +256,7 @@ function getUserData() {
         <h1>Buildings</h1>
         <div class="row">
             <div class="col-md-6">
-                <button n id="openBox" class="btn btn-primary btn-block">Click to Open</button>
+                <button n id="openBox" class="btn btn-primary btn-block btn-danger">Click to Open</button>
                 <div id="errorArea" style="display: none;"></div>
                 <div class="reward-area" id="rewardsArea">Rewards will be displayed here.</div>
             </div>
