@@ -1,0 +1,21 @@
+workflow: flux_workflow_api.json
+prompt:
+   - "6"
+   - inputs
+   - text
+seed:
+   - "25"
+   - inputs
+   - noise_seed
+output:
+   - "31"
+   - inputs
+   - filename_prefix
+width:
+   - "5"
+   - inputs
+   - width
+height:
+   - "5"
+   - inputs
+   - height

@@ -1,0 +1,150 @@
+Please implement the provided game in GSL as a single HTML File.
+
+
+The html file should begin with 
+
+<div id="info"></div>
+<script src="/static/gsl_helpers.js"></script>
+
+gsl_helpers looks like this:
+const infoDiv = document.getElementById('info');
+const state = {
+    counters: {},
+    inventory: {}
+};
+
+function updateInfoDiv() {
+    const countersText = Object.entries(state.counters)
+        .map(([key, value]) => `<div><span>${key}</span>=<span>${value}</span></div>`)
+        .join('');
+    const inventoryText = Object.entries(state.inventory)
+        .map(([key, value]) => `<div><span>${key}</span>=<span>${value}</span></div>`)
+        .join('');
+    infoDiv.innerHTML = `${countersText}${inventoryText}`;
+}
+// Function to asynchronously get the value of a counter
+async function getCounter(counterName) {
+    try {
+        const response = await fetch(`/get_counter?name=${counterName}`);
+        const data = await response.json();
+        if (data.value !== undefined) {
+            console.log(`Counter ${counterName}: ${data.value}`);
+            state.counters[counterName] = data.value;
+            updateInfoDiv();
+            return data.value;
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        console.error('Error fetching counter:', error);
+    }
+}
+
+// Function to asynchronously set the value of a counter
+async function setCounter(counterName, value) {
+    try {
+        const response = await fetch('/set_counter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: counterName, value })
+        });
+        const data = await response.json();
+        if (data.success) {
+            console.log(`Counter ${counterName} set to ${value}`);
+            state.counters[counterName] = value;
+            updateInfoDiv();
+            return true;
+        } else {
+            throw new Error('Failed to set counter');
+        }
+    } catch (error) {
+        console.error('Error setting counter:', error);
+    }
+}
+
+// Function to asynchronously check if an item is in the inventory
+async function inventoryHas(itemName) {
+    try {
+        const response = await fetch(`/inventory_has?item=${itemName}`);
+        const data = await response.json();
+        console.log(`Has ${itemName}: ${data.has_item}`);
+        state.inventory[itemName] = data.has_item ? 'yes' : 'no';
+        updateInfoDiv();
+        return data.has_item;
+    } catch (error) {
+        console.error('Error checking inventory:', error);
+    }
+}
+
+// Function to asynchronously add an item to the inventory
+async function addItemToInventory(itemName, quantity = 1) {
+    try {
+        const response = await fetch('/inventory_add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ item: itemName, quantity })
+        });
+        const data = await response.json();
+        if (data.success) {
+            console.log(`${quantity} ${itemName}(s) added to inventory`);
+            state.inventory[itemName] = (state.inventory[itemName] || 0) + quantity;
+            updateInfoDiv();
+            return true;
+        } else {
+            throw new Error('Failed to add item to inventory');
+        }
+    } catch (error) {
+        console.error('Error adding item to inventory:', error);
+    }
+}
+
+// Function to asynchronously remove an item from the inventory
+async function removeItemFromInventory(itemName, quantity = 1) {
+    try {
+        const response = await fetch('/inventory_remove', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ item: itemName, quantity })
+        });
+        const data = await response.json();
+        if (data.success) {
+            console.log(`${quantity} ${itemName}(s) removed from inventory`);
+            state.inventory[itemName] = (state.inventory[itemName] || 0) - quantity;
+            if (state.inventory[itemName] <= 0) {
+                delete state.inventory[itemName];
+            }
+            updateInfoDiv();
+            return true;
+        } else {
+            throw new Error('Failed to remove item from inventory');
+        }
+    } catch (error) {
+        console.error('Error removing item from inventory:', error);
+    }
+}
+
+// Function to asynchronously fetch an image
+async function getImage(name) {
+    try {
+        const response = await fetch('/get_image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({ object: name })
+        });
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        return data.image;
+    } catch (error) {
+        console.error('Error fetching image:', error);
+    }
+}

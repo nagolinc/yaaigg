@@ -1,0 +1,1273 @@
+Please implement the provided game in GSL as a single HTML File.
+
+Generally speaking, you should use the getImage() function to generate images for the game.
+
+Notice that getImage() returns an image URL. 
+You should use this URL in the src attribute of an <img> tag to display the image.
+
+You should use getPlayerImage() to get the player image.
+
+When writing or reading a counter, you should use the getCounter and setCounter functions
+
+Avoid using the alert() function in Javascript, instead create a <div> for messages and update it with the message.
+
+The html file should begin with 
+
+<div id="info"></div>
+<script src="/static/gsl_helpers.js"></script>
+
+gsl_helpers looks like this:
+
+```
+const infoDiv = document.getElementById('info');
+const state = {
+    counters: {}
+};
+
+function updateInfoDiv() {
+    const countersText = Object.entries(state.counters)
+        .map(([key, value]) => `<div><span>${key}</span>=<span>${value}</span></div>`)
+        .join('');
+    infoDiv.innerHTML = `${countersText}`;
+}
+// Function to asynchronously get the value of a counter
+async function getCounter(counterName) {
+    try {
+        const response = await fetch(`/get_counter?name=${counterName}`);
+        const data = await response.json();
+        if (data.value !== undefined) {
+            console.log(`Counter ${counterName}: ${data.value}`);
+            state.counters[counterName] = data.value;
+            updateInfoDiv();
+            return data.value;
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        console.error('Error fetching counter:', error);
+    }
+}
+
+// Function to asynchronously set the value of a counter
+async function setCounter(counterName, value) {
+    try {
+        const response = await fetch('/set_counter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: counterName, value })
+        });
+        const data = await response.json();
+        if (data.success) {
+            console.log(`Counter ${counterName} set to ${value}`);
+            state.counters[counterName] = value;
+            updateInfoDiv();
+            return true;
+        } else {
+            throw new Error('Failed to set counter');
+        }
+    } catch (error) {
+        console.error('Error setting counter:', error);
+    }
+}
+
+// Function to asynchronously fetch an image
+async function getImage(name) {
+    try {
+        const response = await fetch('/get_image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({ object: name })
+        });
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        return data.image;
+    } catch (error) {
+        console.error('Error fetching image:', error);
+    }
+}
+
+//function to get the player image (returns a url to the image like /static/player.png)
+async function getPlayerImage() {
+    const url = '/get_player_image';
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        return data.image;
+    } catch (error) {
+        console.error('Error fetching player image:', error);
+    }
+}
+
+```
+
+
+
+
+
+
+Here are some examples.
+
+
+Here's a game implementation in GSL where the player must put out fires to earn the 'town hero' badge:
+
+```
+minigame "Fire Fighter Hero" {
+    layout "town_map" {
+        size 10x10
+
+        objects "building" type "clickable" count 8 {
+            position random
+            size 2x2
+            property "on_fire" false
+        }
+
+        object "fire_station" type "clickable" {
+            position 0x0
+            size 2x2
+        }
+
+        object "player" type "player" {
+            position 1x1
+            size 1x1
+        }
+    }
+
+    counter "fires_extinguished" start 0
+    counter "water_supply" start 100
+    counter "town_hero_badges" start GLOBAL
+
+    button "refill_water" label "Refill Water"
+
+    event "game_start" {
+        condition "game start"
+        action "display_message" message "Welcome to Fire Fighter Hero! Put out fires to save the town and earn the hero badge."
+    }
+
+    event "start_random_fire" {
+        condition "random_chance" probability 20
+        action "set" property "on_fire" object "building" to true for random
+        action "display_message" message "A fire has started! Hurry to put it out!"
+    }
+
+    events "extinguish_fire" for each "building" {
+        condition "clicked" object "building"
+        condition property "on_fire" object "building" equals true
+        condition "counter" counter "water_supply" greater than 0
+        action "set" property "on_fire" object "building" to false
+        action "decrement" counter "water_supply" by 20
+        action "increment" counter "fires_extinguished" by 1
+        action "display_message" message "Fire extinguished! Good job!"
+    }
+
+    event "refill_water_supply" {
+        condition "clicked" button "refill_water"
+        condition "collides_with" object "player" target "fire_station"
+        action "set" counter "water_supply" to 100
+        action "display_message" message "Water supply refilled!"
+    }
+
+    event "water_depleted" {
+        condition "counter" counter "water_supply" equals 0
+        action "display_message" message "Water supply depleted! Return to the fire station to refill."
+    }
+
+    event "win_hero_badge" {
+        condition "counter" counter "fires_extinguished" equals 10
+        action "increment" counter "town_hero_badges" by 1
+        action "game_end" message "Congratulations! You've earned the Town Hero badge for extinguishing 10 fires!"
+    }
+
+    event "game_over" {
+        condition "counter" counter "fires_extinguished" less than 10
+        condition "all" property "on_fire" object "building" equals true
+        action "game_end" message "The town has burned down! Game over. Try again to earn the Town Hero badge."
+    }
+}
+```
+
+This game, "Fire Fighter Hero," includes the following elements:
+
+1. A 10x10 town map with randomly placed buildings and a fire station.
+2. The player can move around the map.
+3. Buildings can randomly catch fire.
+4. The player can click on burning buildings to extinguish fires, using water from their supply.
+5. The player can refill their water supply at the fire station.
+6. The game tracks the number of fires extinguished and the remaining water supply.
+7. The player wins by extinguishing 10 fires and earns the 'Town Hero' badge.
+8. The game ends if all buildings are on fire before the player can extinguish 10 fires.
+
+This game incorporates various GSL concepts such as objects with properties, counters, events with conditions and actions, and a global counter for the 'Town Hero' badges that can be used across multiple minigames.
+
+```html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Fighter Hero</title>
+    <style>
+        #game-container {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-template-rows: repeat(10, 50px);
+            gap: 2px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #controls {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info"></div>
+    <div id="game-container"></div>
+    <div id="message"></div>
+    <div id="controls">
+        <button id="refill-water">Refill Water</button>
+    </div>
+    <script src="/static/gsl_helpers.js"></script>
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const messageDiv = document.getElementById('message');
+        const refillButton = document.getElementById('refill-water');
+
+        let player = { x: 1, y: 1 };
+        let buildings = [];
+        let fireStation = { x: 0, y: 0 };
+
+        async function initGame() {
+            // Initialize counters
+            await setCounter('fires_extinguished', 0);
+            await setCounter('water_supply', 100);
+            await getCounter('town_hero_badges');
+
+            // Create game grid
+            for (let y = 0; y < 10; y++) {
+                for (let x = 0; x < 10; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${x}-${y}`;
+                    gameContainer.appendChild(cell);
+                }
+            }
+
+            // Place buildings
+            for (let i = 0; i < 8; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * 9);
+                    y = Math.floor(Math.random() * 9);
+                } while (buildings.some(b => Math.abs(b.x - x) < 2 && Math.abs(b.y - y) < 2));
+                buildings.push({ x, y, onFire: false });
+                await placeImage('building', x, y);
+            }
+
+            // Place fire station
+            await placeImage('fire_station', fireStation.x, fireStation.y);
+
+            // Place player
+            await placeImage('player', player.x, player.y);
+
+            displayMessage("Welcome to Fire Fighter Hero! Put out fires to save the town and earn the hero badge.");
+
+            // Set up event listeners
+            document.addEventListener('keydown', movePlayer);
+            gameContainer.addEventListener('click', handleCellClick);
+            refillButton.addEventListener('click', refillWater);
+
+            // Start the game loop
+            gameLoop();
+        }
+
+        async function placeImage(imageName, x, y) {
+            const cell = document.getElementById(`cell-${x}-${y}`);
+            const imageUrl = imageName === 'player' ? await getPlayerImage() : await getImage(imageName);
+            cell.innerHTML = `<img src="${imageUrl}" alt="${imageName}" width="48" height="48">`;
+        }
+
+        async function movePlayer(event) {
+            const oldX = player.x;
+            const oldY = player.y;
+
+            switch (event.key) {
+                case 'ArrowUp': player.y = Math.max(0, player.y - 1); break;
+                case 'ArrowDown': player.y = Math.min(9, player.y + 1); break;
+                case 'ArrowLeft': player.x = Math.max(0, player.x - 1); break;
+                case 'ArrowRight': player.x = Math.min(9, player.x + 1); break;
+                default: return;
+            }
+
+            if (oldX !== player.x || oldY !== player.y) {
+                document.getElementById(`cell-${oldX}-${oldY}`).innerHTML = '';
+                await placeImage('player', player.x, player.y);
+            }
+        }
+
+        async function handleCellClick(event) {
+            const cell = event.target.closest('.cell');
+            if (!cell) return;
+
+            const [x, y] = cell.id.split('-').slice(1).map(Number);
+            const building = buildings.find(b => b.x === x && b.y === y);
+
+            if (building && building.onFire) {
+                const waterSupply = await getCounter('water_supply');
+                if (waterSupply > 0) {
+                    building.onFire = false;
+                    await setCounter('water_supply', waterSupply - 20);
+                    await setCounter('fires_extinguished', await getCounter('fires_extinguished') + 1);
+                    await placeImage('building', x, y);
+                    displayMessage("Fire extinguished! Good job!");
+                    checkWinCondition();
+                } else {
+                    displayMessage("Water supply depleted! Return to the fire station to refill.");
+                }
+            }
+        }
+
+        async function refillWater() {
+            if (player.x === fireStation.x && player.y === fireStation.y) {
+                await setCounter('water_supply', 100);
+                displayMessage("Water supply refilled!");
+            } else {
+                displayMessage("You need to be at the fire station to refill water!");
+            }
+        }
+
+        function displayMessage(message) {
+            messageDiv.textContent = message;
+        }
+
+        async function startRandomFire() {
+            const unburntBuildings = buildings.filter(b => !b.onFire);
+            if (unburntBuildings.length > 0 && Math.random() < 0.2) {
+                const building = unburntBuildings[Math.floor(Math.random() * unburntBuildings.length)];
+                building.onFire = true;
+                await placeImage('building_on_fire', building.x, building.y);
+                displayMessage("A fire has started! Hurry to put it out!");
+            }
+        }
+
+        async function checkWinCondition() {
+            const firesExtinguished = await getCounter('fires_extinguished');
+            if (firesExtinguished >= 10) {
+                await setCounter('town_hero_badges', await getCounter('town_hero_badges') + 1);
+                displayMessage("Congratulations! You've earned the Town Hero badge for extinguishing 10 fires!");
+                setTimeout(() => {
+                    alert("You win! Game will restart.");
+                    location.reload();
+                }, 2000);
+            }
+        }
+
+        async function checkLoseCondition() {
+            if (buildings.every(b => b.onFire)) {
+                displayMessage("The town has burned down! Game over. Try again to earn the Town Hero badge.");
+                setTimeout(() => {
+                    alert("Game over! The town has burned down. Game will restart.");
+                    location.reload();
+                }, 2000);
+            }
+        }
+
+        async function gameLoop() {
+            await startRandomFire();
+            await checkLoseCondition();
+            setTimeout(gameLoop, 2000);
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
+
+
+```
+
+
+
+
+Here's a simple game implementation in GSL where you click on squirrels to make them jump:
+
+```
+minigame "Jumping Squirrels" {
+    layout "park" {
+        size 10x8
+
+        objects "squirrel" type "clickable" count 5 {
+            position random
+            size 1x1
+            property "jumping" false
+        }
+
+        objects "tree" type "blocking" count 3 {
+            position random
+            size 2x2
+        }
+    }
+
+    counter "jumps" start 0
+    counter "acorns" start GLOBAL
+
+    event "game_start" {
+        condition "game start"
+        action "display_message" message "Welcome to Jumping Squirrels! Click on the squirrels to make them jump. Make all squirrels jump 3 times to win!"
+    }
+
+    events "squirrel_jump" for each "squirrel" {
+        condition "clicked" object "squirrel"
+        condition property "jumping" object "squirrel" equals false
+        action "set" property "jumping" object "squirrel" to true
+        action "increment" counter "jumps" by 1
+        action "display_message" message "Squirrel jumped!"
+    }
+
+    events "squirrel_land" for each "squirrel" {
+        condition property "jumping" object "squirrel" equals true
+        action "set" property "jumping" object "squirrel" to false
+    }
+
+    event "win_game" {
+        condition "counter" counter "jumps" equals 15
+        action "increment" counter "acorns" by 5
+        action "game_end" message "Congratulations! All squirrels jumped 3 times. You win 5 acorns!"
+    }
+}
+```
+
+Let's break down this game:
+
+1. The game is set in a park layout of 10x8 cells.
+
+2. There are 5 clickable squirrel objects placed randomly on the map.
+
+3. There are 3 blocking tree objects, also placed randomly.
+
+4. Each squirrel has a "jumping" property that is initially set to false.
+
+5. We have two counters:
+   - "jumps" to keep track of the total number of jumps
+   - "acorns" which is a global counter (can be used across different minigames)
+
+6. When the game starts, a welcome message is displayed explaining the game objective.
+
+7. When a player clicks on a squirrel:
+   - If the squirrel is not already jumping, it will jump (its "jumping" property is set to true)
+   - The "jumps" counter is incremented
+   - A message is displayed saying "Squirrel jumped!"
+
+8. After each jump, the squirrel automatically lands (its "jumping" property is set back to false).
+
+9. The game is won when the total number of jumps reaches 15 (which means each of the 5 squirrels has jumped 3 times).
+
+10. Upon winning, the player receives 5 acorns (added to the global "acorns" counter) and a victory message is displayed.
+
+This game demonstrates the use of clickable objects, properties, counters, and events. The trees serve as obstacles to make the layout more interesting, although they don't directly affect the gameplay in this simple version.
+
+
+```html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jumping Squirrels</title>
+    <style>
+        #game-container {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-template-rows: repeat(8, 50px);
+            gap: 2px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="info"></div>
+    <div id="game-container"></div>
+    <div id="message"></div>
+    <script src="/static/gsl_helpers.js"></script>
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const messageDiv = document.getElementById('message');
+
+        let squirrels = [];
+        let trees = [];
+
+        async function initGame() {
+            // Initialize counters
+            await setCounter('jumps', 0);
+            await getCounter('acorns');
+
+            // Create game grid
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 10; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${x}-${y}`;
+                    gameContainer.appendChild(cell);
+                }
+            }
+
+            // Place trees
+            for (let i = 0; i < 3; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * 9);
+                    y = Math.floor(Math.random() * 7);
+                } while (trees.some(t => Math.abs(t.x - x) < 2 && Math.abs(t.y - y) < 2));
+                trees.push({ x, y });
+                await placeImage('tree', x, y);
+            }
+
+            // Place squirrels
+            for (let i = 0; i < 5; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * 10);
+                    y = Math.floor(Math.random() * 8);
+                } while (trees.some(t => t.x <= x && x < t.x + 2 && t.y <= y && y < t.y + 2) ||
+                         squirrels.some(s => s.x === x && s.y === y));
+                squirrels.push({ x, y, jumping: false });
+                await placeImage('squirrel', x, y);
+            }
+
+            displayMessage("Welcome to Jumping Squirrels! Click on the squirrels to make them jump. Make all squirrels jump 3 times to win!");
+
+            // Set up event listener for clicks
+            gameContainer.addEventListener('click', handleCellClick);
+        }
+
+        async function placeImage(imageName, x, y) {
+            const cell = document.getElementById(`cell-${x}-${y}`);
+            const imageUrl = await getImage(imageName);
+            cell.innerHTML = `<img src="${imageUrl}" alt="${imageName}" width="48" height="48">`;
+        }
+
+        async function handleCellClick(event) {
+            const cell = event.target.closest('.cell');
+            if (!cell) return;
+
+            const [x, y] = cell.id.split('-').slice(1).map(Number);
+            const squirrel = squirrels.find(s => s.x === x && s.y === y);
+
+            if (squirrel && !squirrel.jumping) {
+                squirrel.jumping = true;
+                await setCounter('jumps', await getCounter('jumps') + 1);
+                displayMessage("Squirrel jumped!");
+
+                // Animate jump
+                const jumpImageUrl = await getImage('squirrel_jumping');
+                cell.innerHTML = `<img src="${jumpImageUrl}" alt="jumping squirrel" width="48" height="48">`;
+
+                // Land after a short delay
+                setTimeout(async () => {
+                    squirrel.jumping = false;
+                    await placeImage('squirrel', x, y);
+                    checkWinCondition();
+                }, 500);
+            }
+        }
+
+        function displayMessage(message) {
+            messageDiv.textContent = message;
+        }
+
+        async function checkWinCondition() {
+            const jumps = await getCounter('jumps');
+            if (jumps >= 15) {
+                await setCounter('acorns', await getCounter('acorns') + 5);
+                displayMessage("Congratulations! All squirrels jumped 3 times. You win 5 acorns!");
+                setTimeout(() => {
+                    alert("You win! Game will restart.");
+                    location.reload();
+                }, 2000);
+            }
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
+
+```
+
+
+
+
+Here's a game implementation in GSL where the player collects the skulls of dead zombies:
+
+```
+minigame "Zombie Skull Collector" {
+    layout "graveyard" {
+        size 10x10
+
+        objects "zombie" type "actor" count 5 {
+            position random
+            size 1x1
+            direction random
+            speed 1
+            property "alive" true
+        }
+
+        objects "gravestone" type "blocking" count 8 {
+            position random
+            size 1x1
+        }
+
+        object "player" type "player" {
+            position 0x0
+            size 1x1
+        }
+    }
+
+    counter "skulls_collected" start 0
+    counter "zombie_skulls" start GLOBAL
+
+    button "attack" label "Attack Zombie"
+
+    event "game_start" {
+        condition "game start"
+        action "display_message" message "Welcome to Zombie Skull Collector! Attack zombies and collect their skulls."
+    }
+
+    events "zombie_moves" for each "zombie" {
+        condition property "alive" object "zombie" equals true
+        action "move" object "zombie" direction random
+    }
+
+    event "player_attacks_zombie" {
+        condition "clicked" button "attack"
+        condition "adjacent" object "player" to "zombie"
+        condition property "alive" object "zombie" equals true
+        action "set" property "alive" object "zombie" to false
+        action "change_appearance" object "zombie" to "skull"
+        action "display_message" message "You defeated a zombie! Collect its skull."
+    }
+
+    events "player_collects_skull" for each "zombie" {
+        condition "collides_with" object "player" target "zombie"
+        condition property "alive" object "zombie" equals false
+        action "increment" counter "skulls_collected" by 1
+        action "remove" object "zombie"
+        action "display_message" message "You collected a zombie skull!"
+    }
+
+    event "player_hits_gravestone" {
+        condition "collides_with" object "player" target "gravestone"
+        action "display_message" message "Ouch! You bumped into a gravestone."
+    }
+
+    event "game_end" {
+        condition "counter" counter "skulls_collected" equals 5
+        action "increment" counter "zombie_skulls" by 5
+        action "game_end" message "You collected all 5 zombie skulls! Great job!"
+    }
+}
+```
+
+This game, "Zombie Skull Collector", has the following features:
+
+1. The game takes place in a 10x10 graveyard layout.
+
+2. There are 5 zombies that move randomly around the graveyard.
+
+3. The graveyard has 8 gravestones that act as obstacles.
+
+4. The player can move around the graveyard.
+
+5. The player has an "Attack" button to attack adjacent zombies.
+
+6. When a zombie is defeated, it turns into a collectible skull.
+
+7. The player can collect skulls by moving over them.
+
+8. The game ends when the player collects all 5 skulls.
+
+9. The collected skulls are added to a global counter "zombie_skulls".
+
+Here's how the game works:
+
+1. Zombies move randomly each turn.
+2. The player can move around using arrow keys or WASD.
+3. When adjacent to a zombie, the player can click the "Attack" button to defeat it.
+4. Defeated zombies turn into collectible skulls.
+5. The player moves over skulls to collect them.
+6. If the player bumps into a gravestone, they get a message but aren't penalized.
+7. The game ends when all 5 skulls are collected.
+8. The collected skulls are added to the global "zombie_skulls" counter, which could be used in other minigames.
+
+This game combines elements of strategy (avoiding zombies and gravestones while collecting skulls) and action (attacking zombies when adjacent). The global skull counter allows for potential use of collected skulls in other minigames, adding a meta-game element to the overall game structure.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zombie Skull Collector</title>
+    <style>
+        #game-container {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-template-rows: repeat(10, 50px);
+            gap: 2px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #controls {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info"></div>
+    <div id="game-container"></div>
+    <div id="message"></div>
+    <div id="controls">
+        <button id="attack">Attack Zombie</button>
+    </div>
+    <script src="/static/gsl_helpers.js"></script>
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const messageDiv = document.getElementById('message');
+        const attackButton = document.getElementById('attack');
+
+        let player = { x: 0, y: 0 };
+        let zombies = [];
+        let gravestones = [];
+
+        async function initGame() {
+            // Initialize counters
+            await setCounter('skulls_collected', 0);
+            await getCounter('zombie_skulls');
+
+            // Create game grid
+            for (let y = 0; y < 10; y++) {
+                for (let x = 0; x < 10; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${x}-${y}`;
+                    gameContainer.appendChild(cell);
+                }
+            }
+
+            // Place gravestones
+            for (let i = 0; i < 8; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * 10);
+                    y = Math.floor(Math.random() * 10);
+                } while (gravestones.some(g => g.x === x && g.y === y) || (x === 0 && y === 0));
+                gravestones.push({ x, y });
+                await placeImage('gravestone', x, y);
+            }
+
+            // Place zombies
+            for (let i = 0; i < 5; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * 10);
+                    y = Math.floor(Math.random() * 10);
+                } while (gravestones.some(g => g.x === x && g.y === y) ||
+                         zombies.some(z => z.x === x && z.y === y) ||
+                         (x === 0 && y === 0));
+                zombies.push({ x, y, alive: true });
+                await placeImage('zombie', x, y);
+            }
+
+            // Place player
+            await placeImage('player', player.x, player.y);
+
+            displayMessage("Welcome to Zombie Skull Collector! Attack zombies and collect their skulls.");
+
+            // Set up event listeners
+            document.addEventListener('keydown', movePlayer);
+            attackButton.addEventListener('click', attackZombie);
+
+            // Start the game loop
+            gameLoop();
+        }
+
+        async function placeImage(imageName, x, y) {
+            const cell = document.getElementById(`cell-${x}-${y}`);
+            const imageUrl = imageName === 'player' ? await getPlayerImage() : await getImage(imageName);
+            cell.innerHTML = `<img src="${imageUrl}" alt="${imageName}" width="48" height="48">`;
+        }
+
+        async function movePlayer(event) {
+            const oldX = player.x;
+            const oldY = player.y;
+
+            switch (event.key) {
+                case 'ArrowUp': case 'w': player.y = Math.max(0, player.y - 1); break;
+                case 'ArrowDown': case 's': player.y = Math.min(9, player.y + 1); break;
+                case 'ArrowLeft': case 'a': player.x = Math.max(0, player.x - 1); break;
+                case 'ArrowRight': case 'd': player.x = Math.min(9, player.x + 1); break;
+                default: return;
+            }
+
+            if (gravestones.some(g => g.x === player.x && g.y === player.y)) {
+                player.x = oldX;
+                player.y = oldY;
+                displayMessage("Ouch! You bumped into a gravestone.");
+                return;
+            }
+
+            if (oldX !== player.x || oldY !== player.y) {
+                document.getElementById(`cell-${oldX}-${oldY}`).innerHTML = '';
+                await placeImage('player', player.x, player.y);
+                await collectSkull();
+            }
+        }
+
+        async function attackZombie() {
+            const adjacentZombie = zombies.find(z =>
+                z.alive &&
+                Math.abs(z.x - player.x) <= 1 &&
+                Math.abs(z.y - player.y) <= 1 &&
+                (z.x === player.x || z.y === player.y)
+            );
+
+            if (adjacentZombie) {
+                adjacentZombie.alive = false;
+                await placeImage('skull', adjacentZombie.x, adjacentZombie.y);
+                displayMessage("You defeated a zombie! Collect its skull.");
+            } else {
+                displayMessage("No zombie nearby to attack!");
+            }
+        }
+
+        async function collectSkull() {
+            const skull = zombies.find(z => !z.alive && z.x === player.x && z.y === player.y);
+            if (skull) {
+                await setCounter('skulls_collected', await getCounter('skulls_collected') + 1);
+                zombies = zombies.filter(z => z !== skull);
+                displayMessage("You collected a zombie skull!");
+                checkWinCondition();
+            }
+        }
+
+        async function moveZombies() {
+            for (const zombie of zombies) {
+                if (zombie.alive) {
+                    const oldX = zombie.x;
+                    const oldY = zombie.y;
+                    const direction = Math.floor(Math.random() * 4);
+                    switch (direction) {
+                        case 0: zombie.y = Math.max(0, zombie.y - 1); break;
+                        case 1: zombie.y = Math.min(9, zombie.y + 1); break;
+                        case 2: zombie.x = Math.max(0, zombie.x - 1); break;
+                        case 3: zombie.x = Math.min(9, zombie.x + 1); break;
+                    }
+                    if (!gravestones.some(g => g.x === zombie.x && g.y === zombie.y) &&
+                        !zombies.some(z => z !== zombie && z.x === zombie.x && z.y === zombie.y) &&
+                        !(zombie.x === player.x && zombie.y === player.y)) {
+                        document.getElementById(`cell-${oldX}-${oldY}`).innerHTML = '';
+                        await placeImage('zombie', zombie.x, zombie.y);
+                    } else {
+                        zombie.x = oldX;
+                        zombie.y = oldY;
+                    }
+                }
+            }
+        }
+
+        function displayMessage(message) {
+            messageDiv.textContent = message;
+        }
+
+        async function checkWinCondition() {
+            const skullsCollected = await getCounter('skulls_collected');
+            if (skullsCollected >= 5) {
+                await setCounter('zombie_skulls', await getCounter('zombie_skulls') + 5);
+                displayMessage("You collected all 5 zombie skulls! Great job!");
+                setTimeout(() => {
+                    alert("You win! Game will restart.");
+                    location.reload();
+                }, 2000);
+            }
+        }
+
+        async function gameLoop() {
+            await moveZombies();
+            setTimeout(gameLoop, 1000);
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
+```
+
+
+
+
+Here's a GSL implementation for a game called "Seal Rescue" where the player must rescue baby seals from a killer whale:
+
+```
+minigame "Seal Rescue" {
+    layout "ocean_map" {
+        size 10x8
+
+        objects "baby_seal" type "collectible" count 5 {
+            position random
+            size 1x1
+            property "rescued" false
+        }
+
+        object "killer_whale" type "actor" {
+            position random
+            size 2x1
+            direction random
+            speed 1
+        }
+
+        object "player" type "player" {
+            position 0x0
+            size 1x1
+        }
+
+        objects "ice_floe" type "blocking" count 8 {
+            position random
+            size 1x1
+        }
+    }
+
+    counter "seals_rescued" start 0
+    counter "rescue_points" start GLOBAL
+
+    event "game_start" {
+        condition "game start"
+        action "display_message" message "Welcome to Seal Rescue! Save the baby seals from the killer whale. Use ice floes for protection."
+    }
+
+    events "player_rescues_seal" for each "baby_seal" {
+        condition "collides_with" object "player" target "baby_seal"
+        condition property "rescued" object "baby_seal" equals false
+        action "set" property "rescued" object "baby_seal" to true
+        action "increment" counter "seals_rescued" by 1
+        action "display_message" message "You rescued a baby seal!"
+    }
+
+    event "killer_whale_moves" {
+        action "move" object "killer_whale" direction random
+    }
+
+    event "killer_whale_changes_direction" {
+        condition "collides_with" object "killer_whale" target "ice_floe"
+        action "change_direction" object "killer_whale"
+    }
+
+    event "player_caught_by_whale" {
+        condition "collides_with" object "player" target "killer_whale"
+        action "game_end" message "Oh no! The killer whale caught you. Game over."
+    }
+
+    event "all_seals_rescued" {
+        condition "counter" counter "seals_rescued" equals 5
+        action "increment" counter "rescue_points" by 10
+        action "game_end" message "Congratulations! You rescued all the baby seals and earned 10 rescue points!"
+    }
+
+    event "time_runs_out" {
+        condition "game_time" equals 60
+        action "game_end" message "Time's up! You rescued {seals_rescued} baby seals."
+    }
+}
+```
+
+This game, "Seal Rescue," includes the following elements:
+
+1. An ocean map layout (10x8 grid).
+2. 5 baby seals that the player needs to rescue.
+3. A killer whale that moves randomly and poses a threat to the player.
+4. The player character.
+5. Ice floes that serve as obstacles and protection.
+
+Game mechanics:
+
+1. The player moves around the map to collect (rescue) baby seals.
+2. The killer whale moves randomly each turn.
+3. If the killer whale hits an ice floe, it changes direction.
+4. The player can use ice floes for protection from the killer whale.
+5. The game ends if the player collides with the killer whale.
+6. The game is won when all 5 baby seals are rescued.
+7. There's a time limit of 60 seconds.
+8. Rescuing all seals awards 10 "rescue points" (a global counter).
+
+This game provides a challenging and thematic experience where the player must strategically move around the map, avoiding the killer whale while rescuing the baby seals. The ice floes add an element of strategy, as they can be used for protection but also obstruct movement.
+
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seal Rescue</title>
+    <style>
+        #game-container {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-template-rows: repeat(8, 50px);
+            gap: 2px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #timer {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info"></div>
+    <div id="game-container"></div>
+    <div id="message"></div>
+    <div id="timer"></div>
+    <script src="/static/gsl_helpers.js"></script>
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const messageDiv = document.getElementById('message');
+        const timerDiv = document.getElementById('timer');
+
+        let player = { x: 0, y: 0 };
+        let killerWhale = { x: 0, y: 0, direction: 0 };
+        let babySeals = [];
+        let iceFloes = [];
+        let gameTime = 60;
+        let gameInterval;
+
+        async function initGame() {
+            // Initialize counters
+            await setCounter('seals_rescued', 0);
+            await getCounter('rescue_points');
+
+            // Create game grid
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 10; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${x}-${y}`;
+                    gameContainer.appendChild(cell);
+                }
+            }
+
+            // Place ice floes
+            for (let i = 0; i < 8; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * 10);
+                    y = Math.floor(Math.random() * 8);
+                } while (iceFloes.some(ice => ice.x === x && ice.y === y) || (x === 0 && y === 0));
+                iceFloes.push({ x, y });
+                await placeImage('ice_floe', x, y);
+            }
+
+            // Place baby seals
+            for (let i = 0; i < 5; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * 10);
+                    y = Math.floor(Math.random() * 8);
+                } while (iceFloes.some(ice => ice.x === x && ice.y === y) ||
+                         babySeals.some(seal => seal.x === x && seal.y === y) ||
+                         (x === 0 && y === 0));
+                babySeals.push({ x, y, rescued: false });
+                await placeImage('baby_seal', x, y);
+            }
+
+            // Place killer whale
+            do {
+                killerWhale.x = Math.floor(Math.random() * 9);
+                killerWhale.y = Math.floor(Math.random() * 8);
+            } while (iceFloes.some(ice => ice.x === killerWhale.x && ice.y === killerWhale.y) ||
+                     babySeals.some(seal => seal.x === killerWhale.x && seal.y === killerWhale.y) ||
+                     (killerWhale.x === 0 && killerWhale.y === 0));
+            killerWhale.direction = Math.floor(Math.random() * 4);
+            await placeImage('killer_whale', killerWhale.x, killerWhale.y);
+
+            // Place player
+            await placeImage('player', player.x, player.y);
+
+            displayMessage("Welcome to Seal Rescue! Save the baby seals from the killer whale. Use ice floes for protection.");
+
+            // Set up event listeners
+            document.addEventListener('keydown', movePlayer);
+
+            // Start the game loop
+            gameInterval = setInterval(gameLoop, 1000);
+        }
+
+        async function placeImage(imageName, x, y) {
+            const cell = document.getElementById(`cell-${x}-${y}`);
+            const imageUrl = imageName === 'player' ? await getPlayerImage() : await getImage(imageName);
+            cell.innerHTML = `<img src="${imageUrl}" alt="${imageName}" width="48" height="48">`;
+        }
+
+        async function movePlayer(event) {
+            const oldX = player.x;
+            const oldY = player.y;
+
+            switch (event.key) {
+                case 'ArrowUp': case 'w': player.y = Math.max(0, player.y - 1); break;
+                case 'ArrowDown': case 's': player.y = Math.min(7, player.y + 1); break;
+                case 'ArrowLeft': case 'a': player.x = Math.max(0, player.x - 1); break;
+                case 'ArrowRight': case 'd': player.x = Math.min(9, player.x + 1); break;
+                default: return;
+            }
+
+            if (iceFloes.some(ice => ice.x === player.x && ice.y === player.y)) {
+                player.x = oldX;
+                player.y = oldY;
+                return;
+            }
+
+            if (oldX !== player.x || oldY !== player.y) {
+                document.getElementById(`cell-${oldX}-${oldY}`).innerHTML = '';
+                await placeImage('player', player.x, player.y);
+                await rescueSeal();
+                checkCollisionWithWhale();
+            }
+        }
+
+        async function rescueSeal() {
+            const seal = babySeals.find(s => !s.rescued && s.x === player.x && s.y === player.y);
+            if (seal) {
+                seal.rescued = true;
+                await setCounter('seals_rescued', await getCounter('seals_rescued') + 1);
+                displayMessage("You rescued a baby seal!");
+                checkWinCondition();
+            }
+        }
+
+        async function moveKillerWhale() {
+            const oldX = killerWhale.x;
+            const oldY = killerWhale.y;
+
+            switch (killerWhale.direction) {
+                case 0: killerWhale.y = Math.max(0, killerWhale.y - 1); break;
+                case 1: killerWhale.x = Math.min(8, killerWhale.x + 1); break;
+                case 2: killerWhale.y = Math.min(7, killerWhale.y + 1); break;
+                case 3: killerWhale.x = Math.max(0, killerWhale.x - 1); break;
+            }
+
+            if (iceFloes.some(ice => ice.x === killerWhale.x && ice.y === killerWhale.y)) {
+                killerWhale.x = oldX;
+                killerWhale.y = oldY;
+                killerWhale.direction = (killerWhale.direction + 1) % 4;
+            } else {
+                document.getElementById(`cell-${oldX}-${oldY}`).innerHTML = '';
+                await placeImage('killer_whale', killerWhale.x, killerWhale.y);
+            }
+
+            checkCollisionWithWhale();
+        }
+
+        function checkCollisionWithWhale() {
+            if (player.x >= killerWhale.x && player.x < killerWhale.x + 2 && player.y === killerWhale.y) {
+                endGame("Oh no! The killer whale caught you. Game over.");
+            }
+        }
+
+        function displayMessage(message) {
+            messageDiv.textContent = message;
+        }
+
+        async function checkWinCondition() {
+            const sealsRescued = await getCounter('seals_rescued');
+            if (sealsRescued >= 5) {
+                await setCounter('rescue_points', await getCounter('rescue_points') + 10);
+                endGame("Congratulations! You rescued all the baby seals and earned 10 rescue points!");
+            }
+        }
+
+        function updateTimer() {
+            gameTime--;
+            timerDiv.textContent = `Time left: ${gameTime} seconds`;
+            if (gameTime <= 0) {
+                endGame(`Time's up! You rescued ${getCounter('seals_rescued')} baby seals.`);
+            }
+        }
+
+        async function gameLoop() {
+            await moveKillerWhale();
+            updateTimer();
+        }
+
+        function endGame(message) {
+            clearInterval(gameInterval);
+            displayMessage(message);
+            setTimeout(() => {
+                alert(message);
+                location.reload();
+            }, 2000);
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
+```
