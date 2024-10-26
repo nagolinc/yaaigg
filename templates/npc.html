@@ -153,11 +153,16 @@
 
             // Add click event to the thumbnail
             rewardElement.find('.thumbnail').on('click', function () {
-                var fullImageSrc = $(this).data('full');
-                $('#fullImage').attr('src', ''); // Clear the previous image
+                console.log('about to die',item,)
+                //var fullImageSrc = $(this).data('full');
+                var fullImageSrc = item.filename;
+                $('#modalImage').attr('src', ''); // Clear the previous image
                 $('#imageModal').css('display', 'block');
                 $('#caption').text(item.caption);
-                $('#fullImage').attr('src', fullImageSrc); // Set the new image source
+                $('#modalImage').attr('src', fullImageSrc); // Set the new image source
+
+                console.log('huh', $('#modalImage').attr('src'))
+
             });
         }
 

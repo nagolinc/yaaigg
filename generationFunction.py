@@ -110,11 +110,11 @@ comfy_yaml = "comfy.yaml"
 textGenerator = "openAI"
 
 
-def generateImage(prompt, suffix=""):
+def generateImage(prompt, suffix="",width=1024,height=1024):
 
     if imageGenerator == "comfy":
         print("generating comfy image with prompt", prompt)
-        filename = generate_comfy(prompt+suffix, yaml_file=comfy_yaml, width=512, height=512)
+        filename = generate_comfy(prompt+suffix, yaml_file=comfy_yaml, width=width, height=height)
         print("generated image, filename", filename)
         # prepent with / if not already there
         if filename[0] != "/":
@@ -221,6 +221,15 @@ def setupKeywordMapping(yaml_file):
     with open(yaml_file) as f:
         keyword_mapping = yaml.safe_load(open(yaml_file).read())
         
+    if 'comfy_yaml' in keyword_mapping:
+        global comfy_yaml
+        comfy_yaml=keyword_mapping['comfy_yaml']
+        
+    if 'image_width' not in keyword_mapping:
+        keyword_mapping['image_width']=512
+    if 'image_height' not in keyword_mapping:
+        keyword_mapping['image_height']=512
+        
         
 #datetime-random 64 bits, bas64 encoded    
 def generateId():
@@ -235,7 +244,11 @@ def getRandomItem(starRating,level=1):
     reward = json.loads(describeReward(keywords))
     print("here1", reward)
     caption = reward["caption"]
-    filename = generateImage(caption,suffix=keyword_mapping['prompt_suffix'])
+    if "prompt_prefix" in keyword_mapping:
+        prefix=keyword_mapping['prompt_prefix']
+    else:
+        prefix=""
+    filename = generateImage(prefix+caption,suffix=keyword_mapping['prompt_suffix'],width=keyword_mapping['image_width'],height=keyword_mapping['image_height'])
     reward["filename"] = filename
     
     reward['id']=generateId()
@@ -273,7 +286,11 @@ def generateNPC(starRating,level=1):
         describeReward(keywords, system_prompt_file="npc_system_prompt.txt")
     )
     caption = npc["caption"]
-    filename = generateImage(caption,suffix=keyword_mapping['prompt_suffix'])
+    if "prompt_prefix" in keyword_mapping:
+        prefix=keyword_mapping['prompt_prefix']
+    else:
+        prefix=""
+    filename = generateImage(prefix+caption,suffix=keyword_mapping['prompt_suffix'],width=keyword_mapping['image_width'],height=keyword_mapping['image_height'])
     npc["filename"] = filename
     
     npc['id']=generateId()
@@ -302,7 +319,11 @@ def generateBuilding(starRating,level=1):
         describeReward(keywords, system_prompt_file="building_system_prompt.txt")
     )
     caption = building["caption"]
-    filename = generateImage(caption,suffix=keyword_mapping['prompt_suffix'])
+    if "prompt_prefix" in keyword_mapping:
+        prefix=keyword_mapping['prompt_prefix']
+    else:
+        prefix=""
+    filename = generateImage(prefix+caption,suffix=keyword_mapping['prompt_suffix'],width=keyword_mapping['image_width'],height=keyword_mapping['image_height'])
     building["filename"] = filename
     
     building['id']=generateId()
@@ -356,7 +377,11 @@ def generateQuest(starRating,level=1):
     quest[requirement_name]=requirement_value
     
     caption = quest["caption"]
-    filename = generateImage(caption,suffix=keyword_mapping['prompt_suffix'])
+    if "prompt_prefix" in keyword_mapping:
+        prefix=keyword_mapping['prompt_prefix']
+    else:
+        prefix=""
+    filename = generateImage(prefix+caption,suffix=keyword_mapping['prompt_suffix'],width=keyword_mapping['image_width'],height=keyword_mapping['image_height'])
     quest["filename"] = filename
     
     quest['level']=level

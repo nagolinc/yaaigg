@@ -222,6 +222,17 @@ document.addEventListener("DOMContentLoaded", function () {
             for (let i = 0; i < currentBuilding.star_rating; i++) {
                 buildingNameDiv.textContent += "⭐"
             }
+
+            //add a mange button to the building (which is just a link to /building_management?building_id={building.id})
+            const manageButton = document.createElement("button");
+            manageButton.textContent = "Manage";
+            //should have class btn btn-primary manage-btn
+            manageButton.className = "btn btn-primary manage-btn";
+            manageButton.onclick = () => window.location.href = `/building_management?building_id=${currentBuilding.id}`;
+            buildingNameDiv.appendChild(manageButton);
+
+
+
             //show modal with building
             buildingImage.onclick = () => showModal(currentBuilding.thumbnail_filename, currentBuilding.name);
 
@@ -395,6 +406,13 @@ document.addEventListener("DOMContentLoaded", function () {
             for (let i = 0; i < building.star_rating; i++) {
                 buildingNameDiv.textContent += "⭐"
             }
+            //add a mange button to the building (which is just a link to /building_management?building_id={building.id})
+            const manageButton = document.createElement("button");
+            manageButton.textContent = "Manage";
+            //should have class btn btn-primary manage-btn
+            manageButton.className = "btn btn-primary manage-btn";
+            manageButton.onclick = () => window.location.href = `/building_management?building_id=${building.id}`;
+            buildingNameDiv.appendChild(manageButton);
 
         }else{
             buildingImage.src = "";
