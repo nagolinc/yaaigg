@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'header.html' %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Management</title>
+    <style>
+
+
+        .material-item{
+            height: 180px; /* Set a fixed height */
+        }
+
+        #building-thumbnails {
+            display: flex;
+            margin-bottom: 10px;
+            overflow-x: auto;
+        }
+        .thumbnail {
+            cursor: pointer;
+            margin-right: 5px;
+            flex-shrink: 0;
+        }
+        #building-details {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        #building-image {
+            display: block;
+            margin-right: 10px;
+            width: 150px;
+            height: 150px;
+        }
+        #building-info {
+            max-width: 30%;
+        }
+        #message {
+            margin-top: 10px;
+        }
+        #upgrade-button {
+            margin-top: 10px;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+        #materials-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .materials-column {
+            width: 45%;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+        .material-item {
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            text-align: center;
+            padding: 5px;
+            position: relative;
+            cursor: pointer;
+        }
+        .material-item.red-box {
+            border: 2px solid red;
+            cursor: not-allowed;
+        }
+        .material-item img {
+            width: 50px;
+            height: 50px;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            height: 20px;
+            margin-top: 10px;
+        }
+        .progress {
+            width: 0;
+            height: 100%;
+            background-color: #4caf50;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="building-thumbnails">
+        <!-- Building thumbnails will be dynamically inserted here -->
+    </div>
+
+    <div id="building-details">
+        <img id="building-image" src="" alt="Building Image">
+        <div id="building-info">
+            <h3 id="building-name"></h3>
+            <div id="building-description"></div>
+            <div id="message"></div>
+            <button id="upgrade-button">Upgrade Building</button>
+            <div class="progress-bar">
+                <div class="progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="materials-section">
+        <div class="materials-column" id="selected-materials">
+            <h4>Selected Materials</h4>
+            <!-- Selected materials will be inserted here dynamically -->
+        </div>
+        <div class="materials-column" id="available-materials">
+            <h4>Available Materials</h4>
+            <!-- Available materials will be inserted here dynamically -->
+        </div>
+    </div>
+
+    <script src="/static/building_management.js"></script>
+    {% include 'footer.html' %}
+</body>
+</html>
